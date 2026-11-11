@@ -1,0 +1,14 @@
+.git
+.github
+.env*
+secrets
+data
+generated
+.venv*
+__pycache__
+**/__pycache__
+firmware
+tests
+scripts
+security
+docs

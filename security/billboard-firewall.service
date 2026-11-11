@@ -1,0 +1,13 @@
+[Unit]
+Description=Restrict Billboard Dashboard containers' network access
+After=docker.service
+Requires=docker.service
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/billboard-firewall
+RemainAfterExit=yes
+
+[Install]
+WantedBy=docker.service

@@ -1,0 +1,78 @@
+x-hardened: &hardened
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: 64
+  cpus: 0.5
+  logging:
+    driver: json-file
+    options:
+      max-size: 5m
+      max-file: "2"
+services:
+  dashboard:
+    <<: *hardened
+    build: .
+    environment:
+      TZ: ${TZ:-UTC}
+      LOCATION_LABEL: ${LOCATION_LABEL:-DASHBOARD}
+      REGION_LABEL: ${REGION_LABEL:-}
+      MAP_ENABLED: ${MAP_ENABLED:-true}
+      REFRESH_SECONDS: ${REFRESH_SECONDS:-3600}
+      HOME_LAT: ${HOME_LAT:?Run scripts/setup.py first}
+      HOME_LON: ${HOME_LON:?Run scripts/setup.py first}
+      WORK_LAT: ${WORK_LAT:-}
+      WORK_LON: ${WORK_LON:-}
+      TOMTOM_KEY_FILE: /run/secrets/tomtom_key
+      AUTH_FILE: /run/secrets/auth.json
+      HTTPS_PROXY: http://egress:3128
+      HTTP_PROXY: http://egress:3128
+      NO_PROXY: localhost,127.0.0.1
+    volumes:
+      - dashboard-data:/data
+      - ./secrets/tomtom_key:/run/secrets/tomtom_key:ro
+      - ./secrets/auth.json:/run/secrets/auth.json:ro
+    networks: [backend, outbound]
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+    mem_limit: 256m
+    depends_on: [egress]
+  frontend:
+    <<: *hardened
+    image: nginx:stable-alpine
+    user: "101:101"
+    entrypoint: [nginx, -g, "daemon off;"]
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${PORT:-8090}:8443"
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./generated/allowed-clients.conf:/etc/nginx/allowed-clients.conf:ro
+      - ./secrets/tls/server.crt:/run/tls/server.crt:ro
+      - ./secrets/tls/server.key:/run/tls/server.key:ro
+    networks: [ingress, backend]
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+    mem_limit: 64m
+    depends_on: [dashboard]
+  egress:
+    <<: *hardened
+    build: ./egress
+    networks: [internet, outbound]
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+    mem_limit: 96m
+networks:
+  backend:
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.gateway_mode_ipv4: isolated
+  outbound:
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.gateway_mode_ipv4: isolated
+  ingress:
+    driver_opts:
+      com.docker.network.bridge.name: ${BRIDGE_PREFIX:-br-bboard}-in
+  internet:
+    driver_opts:
+      com.docker.network.bridge.name: ${BRIDGE_PREFIX:-br-bboard}-out
+volumes:
+  dashboard-data:
