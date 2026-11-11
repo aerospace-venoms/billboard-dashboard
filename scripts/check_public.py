@@ -19,7 +19,7 @@ def main():
         body=subprocess.check_output(['git','show',':'+name])
         if re.search(rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----',body):
             failures.append(name+': private key')
-        # Only the reproducible fictional demo is an allowed tracked raster image.
+        # Only the reviewed public-location demo is an allowed tracked raster image.
         if path.suffix.lower() in {'.png','.jpg','.jpeg','.webp'} and name != 'docs/demo.png':
             failures.append(name+': unexpected raster image; review for personal data')
     if failures:

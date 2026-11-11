@@ -14,7 +14,7 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python -m unittest discover -s tests -v
       - run: python scripts/check_public.py
-      - run: python scripts/demo.py && git diff --exit-code -- docs/demo.png
+      - run: python scripts/demo.py --output /tmp/demo.png
       - run: docker build -t billboard-dashboard .
   firmware:
     runs-on: ubuntu-latest

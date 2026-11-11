@@ -8,11 +8,13 @@ it over authenticated HTTPS, refreshes the panel if it changed, and sleeps.
 Home Assistant is not required. This is an independent community project, not an
 official Hackaday release.
 
-![Fictional example dashboard](docs/demo.png)
+![Pasadena weather snapshot](docs/demo.png)
 
 *The demo is centered on Pasadena City Hall, California (34.1478, -118.1436),
-using public geographic outlines and Pacific time. Forecasts, travel times and
-weather overlays are fictional. No private installation data is included.*
+using real Open-Meteo forecasts and AWC infrared/radar imagery captured at the
+time printed on the image. This is a static snapshot, not a continuously updating
+forecast. Commute figures are explicitly fictional; battery state is unavailable.
+No private installation data or API keys are used.*
 
 ## What it does
 
@@ -160,8 +162,18 @@ python3 -m venv .venv
 .venv/bin/python scripts/demo.py
 ```
 
-Tests use fixtures and temporary credentials. The demo generator does not fetch
-live data or read a deployment's `.env`/credentials. CI tests the server and builds
+Tests use fixtures and temporary credentials. By default the demo generator writes
+`generated/demo-offline.png` using fictional data without any network access.
+To update the README snapshot with real public Pasadena weather and AWC imagery:
+
+```sh
+.venv/bin/python scripts/demo.py --live
+```
+
+This writes `docs/demo.png`, always uses the public City Hall coordinates, and
+never reads a deployment's `.env`, caches or API keys. Commute figures remain
+labeled as examples. CI uses the offline mode, so tests do not depend on live
+provider availability. CI tests the server and builds
 firmware with disposable, nonfunctional Wi-Fi settings; it never publishes firmware
 binaries. To build the server image: `docker build -t billboard-dashboard .`.
 

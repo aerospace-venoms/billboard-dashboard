@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Render an explicitly fictional dashboard, without network calls or private files."""
+"""Render an offline example, or fetch public Pasadena weather with --live."""
 from datetime import datetime
+import argparse
+import time
 from io import BytesIO
 import math
 import json
@@ -17,6 +19,12 @@ PASADENA_CITY_HALL = (34.1478, -118.1436)
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--live', action='store_true', help='Fetch real Pasadena forecast and AWC imagery; no API key')
+    parser.add_argument('--output', type=Path, help='Output PNG; defaults to docs/demo.png for live, generated/demo-offline.png otherwise')
+    args = parser.parse_args()
+    app.HOME = PASADENA_CITY_HALL
+    app.INTERVAL = 3600
     app.TZ = ZoneInfo('America/Los_Angeles')
     app.LOCATION_LABEL = 'PASADENA'
     app.REGION_LABEL = 'CALIFORNIA — FICTIONAL WEATHER'
@@ -60,12 +68,26 @@ def main():
     stream=BytesIO(); tile.save(stream,format='PNG')
     satellite={'body':stream.getvalue(),'source_at':now,'satellite_at':now,'radar_at':now,
                'source_label':'DEMO ONLY', 'marker_label':'City Hall'}
-    commute={'status':'ok','fetched_at':now,'to_work':{'minutes':24,'delay_minutes':3},
+    commute={'status':'ok','example':True,'fetched_at':now,'to_work':{'minutes':24,'delay_minutes':3},
              'to_home':{'minutes':28,'delay_minutes':5}}
-    image=app.render(weather,satellite,commute,{},now,{'supply_mv':3920,'sampled_at':now})
+    battery = {'supply_mv':3920,'sampled_at':now}
+    if args.live:
+        # Never load .env, a deployment cache, Wi-Fi settings, or a routing key.
+        weather = app.fetch_weather()
+        satellite = app.fetch_satellite()
+        satellite['marker_label'] = 'City Hall'
+        now = time.time()
+        hours, days = app.forecast_rows(weather, now)
+        if len(hours) != 24 or len(days) != 7:
+            raise ValueError('Incomplete public forecast; previous preview left untouched')
+        app.REGION_LABEL = 'CALIFORNIA — WEATHER SNAPSHOT'
+        battery = None  # This public example has no physical badge to measure.
+    image=app.render(weather,satellite,commute,{},now,battery)
     png,_=app.encode(image)
-    output=Path(__file__).resolve().parents[1]/'docs/demo.png'
+    root = Path(__file__).resolve().parents[1]
+    output = args.output or root/('docs/demo.png' if args.live else 'generated/demo-offline.png')
+    output.parent.mkdir(parents=True, exist_ok=True)
     output.write_bytes(png)
-    print('Wrote docs/demo.png using fictional data; no network requests made.')
+    print(f'Wrote {output.name}: '+('real Pasadena weather/imagery; example commute only.' if args.live else 'fictional data; no network requests made.'))
 
 if __name__ == '__main__': main()

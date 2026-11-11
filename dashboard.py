@@ -233,8 +233,8 @@ def render(weather, satellite, commute, errors, now, battery=None):
     else:
         text(20, 465, 'AWC map unavailable', 18)
     d.line((375, 404, 375, 635), fill=BLACK)
-    text(398, 398, 'COMMUTE', 18, True)
-    text(940, 402, 'LEAVING AT LAST UPDATE', 12, anchor='ra')
+    text(398, 398, 'COMMUTE (EXAMPLE)' if commute.get('example') else 'COMMUTE', 18, True)
+    text(940, 402, 'FICTIONAL TRAVEL TIMES' if commute.get('example') else 'LEAVING AT LAST UPDATE', 12, anchor='ra')
     for i, (key, label) in enumerate([('to_work', 'HOME → WORK'), ('to_home', 'WORK → HOME')]):
         x = 398 + i * 280
         text(x, 445, label, 17, True)
@@ -246,7 +246,9 @@ def render(weather, satellite, commute, errors, now, battery=None):
         else:
             text(x, 480, '—', 44, True)
             text(x, 542, {'needs_key': 'Awaiting API key', 'disabled': 'Not configured'}.get(commute.get('status'), 'Traffic unavailable'), 15)
-    if commute.get('status') == 'ok':
+    if commute.get('example'):
+        text(398, 590, 'Example values — not live traffic', 13)
+    elif commute.get('status') == 'ok':
         text(398, 590, 'TomTom • ' + stamp(commute['fetched_at']), 13)
     else:
         text(398, 590, 'TomTom routing ready to configure', 14)
