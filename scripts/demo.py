@@ -3,18 +3,23 @@
 from datetime import datetime
 from io import BytesIO
 import math
+import json
 from pathlib import Path
 import sys
 from zoneinfo import ZoneInfo
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import dashboard as app
 from PIL import Image, ImageDraw
+from awc import world_pixel, ZOOM, SPAN
+
+# Public civic-center reference, not a private home or workplace.
+PASADENA_CITY_HALL = (34.1478, -118.1436)
 
 
 def main():
-    app.TZ = ZoneInfo('UTC')
-    app.LOCATION_LABEL = 'BILLBOARD'
-    app.REGION_LABEL = 'DEMO — FICTIONAL DATA'
+    app.TZ = ZoneInfo('America/Los_Angeles')
+    app.LOCATION_LABEL = 'PASADENA'
+    app.REGION_LABEL = 'CALIFORNIA — FICTIONAL WEATHER'
     now = datetime(2030, 6, 1, 9, tzinfo=app.TZ).timestamp()
     hours = [now+i*3600 for i in range(24)]
     days = [datetime(2030, 6, 1+i, tzinfo=app.TZ).timestamp() for i in range(7)]
@@ -29,15 +34,32 @@ def main():
     tile = Image.new('RGB',(216,216), app.WHITE)
     d = ImageDraw.Draw(tile)
     d.fontmode = '1'
-    for i in range(5):
-        d.arc((-70+i*22,20+i*8,200+i*25,230+i*9), 170,330,fill=app.BLACK,width=2)
+    # Real public-domain coastal geography centered on Pasadena City Hall.
+    cx, cy = world_pixel(*PASADENA_CITY_HALL, ZOOM)
+    def project(lon, lat):
+        x, y = world_pixel(lat, lon, ZOOM)
+        return ((x-cx+SPAN/2)*216/SPAN, (y-cy+SPAN/2)*216/SPAN)
+    land=json.loads((Path(__file__).resolve().parents[1]/'assets/land.geojson').read_text())
+    for feature in land['features']:
+        geometry=feature['geometry']
+        polygons=[geometry['coordinates']] if geometry['type']=='Polygon' else geometry['coordinates']
+        for polygon in polygons:
+            for ring in polygon:
+                points=[project(lon,lat) for lon,lat in ring]
+                for first,second in zip(points,points[1:]):
+                    if abs(second[0]-first[0]) < (256*2**ZOOM/2)*216/SPAN:
+                        d.line((first,second),fill=app.BLACK,width=2)
+    # Stylized clouds/echoes are explicitly fictional, not current imagery.
+    for i in range(3):
+        d.arc((30+i*18,12+i*12,190+i*18,170+i*12),170,280,fill=app.BLACK,width=1)
     for x,y in [(55,70),(70,83),(80,102),(90,119)]: d.ellipse((x,y,x+12,y+6), fill=app.RED)
     d.ellipse((104,104,112,112),fill=app.RED)
     d.rectangle((10,180,205,210),fill=app.WHITE)
-    d.text((18,188),'SIMULATED MAP',font=app.font(17,True),fill=app.BLACK)
+    d.text((18,188),'SIMULATED WEATHER',font=app.font(14,True),fill=app.BLACK)
     # Ensure the sample has precisely the panel's three colors.
     stream=BytesIO(); tile.save(stream,format='PNG')
-    satellite={'body':stream.getvalue(),'source_at':now,'satellite_at':now,'radar_at':now}
+    satellite={'body':stream.getvalue(),'source_at':now,'satellite_at':now,'radar_at':now,
+               'source_label':'DEMO ONLY', 'marker_label':'City Hall'}
     commute={'status':'ok','fetched_at':now,'to_work':{'minutes':24,'delay_minutes':3},
              'to_home':{'minutes':28,'delay_minutes':5}}
     image=app.render(weather,satellite,commute,{},now,{'supply_mv':3920,'sampled_at':now})

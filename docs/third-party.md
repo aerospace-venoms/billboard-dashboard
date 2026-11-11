@@ -31,4 +31,9 @@ The dataset is bundled for reproducibility; it is not fetched at runtime.
   dependencies; their license files are not replaced by the project license.
 
 The included `docs/demo.png` is generated solely by `scripts/demo.py` using
-fictional values and geometry. No live dashboard capture is distributed.
+fictional weather/travel values and the public Natural Earth coastline. Its
+reference point is the Pasadena civic center near City Hall, approximately
+34.1478, -118.1436. Public location references:
+https://www.cityofpasadena.net/contact/ and
+https://ungegn.un.org/dashboard/cities/details?id=353.
+No live dashboard capture or private address is distributed.

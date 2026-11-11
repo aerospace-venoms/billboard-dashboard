@@ -10,8 +10,9 @@ official Hackaday release.
 
 ![Fictional example dashboard](docs/demo.png)
 
-*This screenshot uses fictional forecasts, travel times and map artwork. It does
-not contain a real installation's location, observations or credentials.*
+*The demo is centered on Pasadena City Hall, California (34.1478, -118.1436),
+using public geographic outlines and Pacific time. Forecasts, travel times and
+weather overlays are fictional. No private installation data is included.*
 
 ## What it does
 
@@ -60,7 +61,8 @@ blank and edit the ignored `firmware/main/private_config.h` later.
 It creates `.env`, fresh TLS certificates, separate random badge/viewer credentials,
 an empty TomTom key file, an nginx allowlist and private firmware configuration.
 It refuses to overwrite an existing installation. `.env.example` documents the
-settings; it is not a usable production location configuration.
+settings with Pasadena City Hall as a public example; choose your own location
+during setup.
 
 On the **Docker host**, prepare file ownership and start the services:
 
